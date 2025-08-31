@@ -1,84 +1,107 @@
-// graph
-const graph = new Map();
-graph.set('david', ['alice', 'bob', 'claire']);
-graph.set('bob', ['anuj', 'peggy']);
-graph.set('alice', ['peggy']);
-graph.set('claire', ['thor', 'jonny']);
-graph.set('anuj', []);
-graph.set('peggy', []);
-graph.set('thor', []);
-graph.set('jonny', []);
-
-// breadth first search. find the shortest path between two nodes, if there is one
-function bfsGraph(graph, source, action) {
-    const queue = graph.get(source);
-    const searched = new Set();
-    let turnCount = 0;
-
-    while (queue[0] !== undefined) {
-        turnCount++;
-        const item = queue.shift();
-        if (searched.has(item)) continue;
-        if (action(item)) {
-            console.log(item, 'is the target');
-            console.log('done in ', turnCount, 'turns');
-            return true;
-        } else {
-            console.log(item, 'is not the target');
-            searched.add(item);
-            const itemAdjacents = graph.get(item);
-            Array.isArray(itemAdjacents) ? queue.push(...itemAdjacents) : queue.push(itemAdjacents);
-        }
-    }
-    console.log('done in ', turnCount, 'turns');
-
-    return false;
-}
-
-// bfsGraph(graph, 'david', p => p.at(-1) === 'm');
-
 // dijkstras algorithm
 // weightened graph
 
 // setup
-const wgraph = new Map();
-wgraph.set('start', { 'a': 6, 'b': 2 });
-wgraph.set('a', { 'fin': 1 });
-wgraph.set('b', { 'a': 3, 'fin': 5 });
-wgraph.set('fin', {});
+const wgraph = {
+    start: { a: 6, b: 2 },
+    a: { fin: 1 },
+    b: { a: 3, fin: 5 },
+    fin: {}
+};
 
-const getEdgeWeight = ({ a, b }) => [a, b];
+function findLowestCostNode(costs, processed) {
+    let lowestCost = Infinity;
+    let lowestCostNode = null;
 
-const costGraph = new Map();
-costGraph.set('a', 6);
-costGraph.set('b', 2);
-costGraph.set('fin', Infinity);
-
-const parentGraph = new Map();
-parentGraph.set('a', 'start');
-parentGraph.set('b', 'start');
-parentGraph.set('fin', null);
-
-const processed = new Set();
-// end setup
-
-function algo(costs) {
-    const node = findLowestCostNode(costs);
-
-    while(node) {
-        const cost = costGraph[node];
-        const neighboors = graph[node];
-
-        for (const n of neighboors.keys().next().value) {
-            const newCost = cost + neighboors[n];
-
-            if (costs[n] > newCost) {
-                costs[n] = newCost;
-                parentGraph[n] = node;
-            }
+    for (const node in costs) {
+        const cost = costs[node];
+        if (cost < lowestCost && !processed.has(node)) {
+            lowestCost = cost;
+            lowestCostNode = node;
         }
-        processed.add(node);
-        node = findLowestCostNode(costs);
+    }
+    return lowestCostNode;
+}
+
+function createCostsObj(graph, start) {
+    const costs = {};
+    for (const node in graph) {
+        if (node === start) continue;
+        costs[node] = graph[start][node] ?? Infinity;
     }
 
+    return costs;
 }
+
+function createParentObj(graph, start) {
+    const parent = {};
+    for (const node in graph[start]) {
+        parent[node] = start;
+    }
+
+    return parent;
+}
+
+function dijkstra(wgraph, start) {
+    const costs = createCostsObj(wgraph, start);
+    const parent = createParentObj(wgraph, start);
+    const processed = new Set();
+
+    let node = findLowestCostNode(costs, processed);
+
+    while (node) {
+        const cost = costs[node];
+        const neighbors = wgraph[node];
+
+        for (const n of Object.keys(neighbors)) {
+            const newCost = cost + neighbors[n];
+            if (newCost < costs[n]) {
+                costs[n] = newCost;
+                parent[n] = node;
+            }
+        }
+
+        processed.add(node);
+        node = findLowestCostNode(costs, processed);
+    }
+
+    return { costs, parent };
+}
+
+// const result = dijkstra(wgraph, "start");
+// console.log(result);
+
+// exercises
+// A
+const exa = {
+    start: { a: 5, b: 2 },
+    a: { c: 4, d: 2 },
+    b: { a: 8, d: 7 },
+    c: { fin: 3, d: 6 },
+    d: { fin: 1 },
+    fin: {}
+};
+const eA = dijkstra(exa, 'start');
+console.log(eA);
+
+// B
+const exb = {
+    start: { a: 10 },
+    a: { c: 20 },
+    b: { a: 1 },
+    c: { b: 1, fin: 30 },
+    fin: {},
+}
+const eB = dijkstra(exb, 'start');
+console.log(eB);
+
+// C
+const exc = {
+    start: { a: 2, b: 2 },
+    a: { fin: 2, c: 2 },
+    b: { c: 2 },
+    c: { b: -1, fin: 2 },
+    fin: {}
+}
+const eC = dijkstra(exc, 'start');
+console.log(eC);
